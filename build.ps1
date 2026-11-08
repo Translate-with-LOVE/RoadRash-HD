@@ -11,3 +11,11 @@ if($LASTEXITCODE){throw 'Config regression failed'}
 if($LASTEXITCODE){throw 'Pixel-format test compilation failed'}
 & "$out/pixel-format.exe" (Join-Path $out ('pixel-fixture-'+[guid]::NewGuid().ToString('N')))
 if($LASTEXITCODE){throw 'Pixel-format regression failed'}
+
+foreach($kind in @('legacy','candidate')){
+ $defs=@();if($kind -eq 'legacy'){$defs=@('/DLEGACY')}
+ & cl.exe /nologo /utf-8 /O2 /MT /W3 @defs "$r/tests/file-access.c" "/Fo$out/file-access-$kind.obj" "/Fe$out/file-access-$kind.exe" /link user32.lib
+ if($LASTEXITCODE){throw "Save access test compilation failed: $kind"}
+ & "$out/file-access-$kind.exe" (Join-Path $out ('save-fixture-'+[guid]::NewGuid().ToString('N')))
+ if($LASTEXITCODE){throw "Save access regression failed: $kind"}
+}

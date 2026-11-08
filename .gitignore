@@ -21,3 +21,5 @@
 __pycache__/
 *.pyc
 .env
+*.RRS
+*.rrs

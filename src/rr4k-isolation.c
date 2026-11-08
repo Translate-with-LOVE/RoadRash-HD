@@ -3,8 +3,8 @@
 #include <dbghelp.h>
 #include <intrin.h>
 
-/* Test-only isolation. The game sees fresh in-memory settings and writes files
-   only inside this copied game directory. It never changes the installed game. */
+/* Legacy settings and copied-directory write guards. The supported native
+   .RRS save call uses normal Windows file access; see file-access.h. */
 static char root[MAX_PATH];
 static HKEY fake=(HKEY)0x5244344b;
 static struct { char name[128]; BYTE data[2048]; DWORD size,type; } values[128];
@@ -83,20 +83,7 @@ static LONG WINAPI enum_value(HKEY key,DWORD index,LPSTR name,LPDWORD nameSize,L
  if(key==fake)return ERROR_NO_MORE_ITEMS;return RegEnumValueA(key,index,name,nameSize,reserved,type,data,size);
 }
 static LONG WINAPI delete_key(HKEY key,LPCSTR name){return ERROR_ACCESS_DENIED;}
-static BOOL allowed_write(LPCWSTR path) {
- WCHAR full[32768],base[MAX_PATH];if(!GetFullPathNameW(path,32768,full,NULL))return FALSE;
- if(!MultiByteToWideChar(CP_ACP,0,root,-1,base,MAX_PATH))return FALSE;
- int n=lstrlenW(base);return !_wcsnicmp(full,base,n)&&full[n]==L'\\';
-}
-static HANDLE WINAPI create_file_w(LPCWSTR name,DWORD access,DWORD share,LPSECURITY_ATTRIBUTES sa,DWORD creation,DWORD flags,HANDLE templateFile) {
- if(((access&(GENERIC_WRITE|GENERIC_ALL|DELETE|WRITE_DAC|WRITE_OWNER))||creation!=OPEN_EXISTING)&&!allowed_write(name)){SetLastError(ERROR_ACCESS_DENIED);return INVALID_HANDLE_VALUE;}
- if(creation==OPEN_EXISTING)hd_on_file(name);
- return CreateFileW(name,access,share,sa,creation,flags,templateFile);
-}
-static HANDLE WINAPI create_file_a(LPCSTR name,DWORD access,DWORD share,LPSECURITY_ATTRIBUTES sa,DWORD creation,DWORD flags,HANDLE templateFile) {
- WCHAR wide[32768];if(!MultiByteToWideChar(CP_ACP,0,name,-1,wide,32768)){SetLastError(ERROR_INVALID_NAME);return INVALID_HANDLE_VALUE;}
- return create_file_w(wide,access,share,sa,creation,flags,templateFile);
-}
+#include "file-access.h"
 static int WINAPI stretch_dibits(HDC dc,int x,int y,int width,int height,int sx,int sy,int sw,int sh,const void *bits,const BITMAPINFO *info,UINT usage,DWORD rop) {
  native_menu_frame(info,bits);rr_race_frame(info,bits);
  if(nativePresentStarted){static RECT previous;RECT clip;int kind=GetClipBox(dc,&clip);if(memcmp(&previous,&clip,sizeof(clip))){char line[192];wsprintfA(line,"Native output clip: kind=%d rect=%d,%d,%d,%d requested=%d,%d,%d,%d device=%dx%d",kind,clip.left,clip.top,clip.right,clip.bottom,x,y,width,height,GetDeviceCaps(dc,HORZRES),GetDeviceCaps(dc,VERTRES));trace(line);previous=clip;}}

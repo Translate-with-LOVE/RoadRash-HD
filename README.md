@@ -4,6 +4,8 @@
 
 支持 640×480、960×720、1440×1080、1920×1440、2880×2160。首次缺少设置时按屏幕选档，已有选择保持不变，改档后重启生效。包含制作人员裁剪修复和 RGB565 高清替换适配。
 
+原生 `.RRS` 保存可使用游戏所选的文档目录等路径，保留 Windows 权限和文件占用检查；不重定向已有存档，也不改变 Steam Cloud 的同步规则。
+
 ## 构建与使用
 
 需要 Windows、Visual Studio 的 x86 C/C++ 工具和 Windows SDK、Python 3。请在 x86 Native Tools 开发者终端运行 `powershell -NoProfile -File build.ps1`，输出在 build。无需运行游戏即可执行离线测试。
